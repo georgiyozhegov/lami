@@ -13,10 +13,7 @@ struct Lexer<'s> {
 
 impl<'s> Lexer<'s> {
     fn new(source: &'s str) -> Self {
-        Self {
-            source,
-            cursor: 0,
-        }
+        Self { source, cursor: 0 }
     }
 
     fn lex(mut self) -> Vec<Token> {
@@ -53,9 +50,7 @@ impl<'s> Lexer<'s> {
                 let lexeme = self.lexeme(|ch| matches!(ch, '_' | 'a'..='z' | 'A'..='Z'));
                 match lexeme {
                     "let" => Token::Let,
-                    _ => {
-                        Token::Word(lexeme.to_owned(), WordType::Identifier)
-                    }
+                    _ => Token::Word(lexeme.to_owned(), WordType::Identifier),
                 }
             }
             '-' | '0'..='9' => {
