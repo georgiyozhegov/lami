@@ -1,0 +1,30 @@
+Program = { Let };
+
+Let = "let", Identifier, "=", Expression;
+
+Expression =
+    Lambda |
+    Application |
+    If;
+
+Lambda = "\", Identifier, "->", Expression;
+
+Application = Atom, { Atom };
+
+Atom =
+    "(", Expression, ")" |
+    Identifier |
+    Number;
+
+If =
+    "if", Expression,
+    "then", Expression,
+    "else", Expression;
+
+Identifier = "_" | Letter, { Letter | Digit };
+
+Letter = "a" .. "z" | "A" .. "Z";
+
+Number = Digit, { Digit };
+
+Digit = "0" .. "9";

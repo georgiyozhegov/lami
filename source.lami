@@ -1,0 +1,12 @@
+let increment = \n -> plus n 1
+
+let true = \t -> \f -> t
+let false = \t -> \f -> f
+
+let fibonacci = \n ->
+    if lessThan n 1
+    then 1
+    else plus (fibonacci minus n 1) (fibonacci minus n 2)
+
+let main = \_ ->
+    fibonacci 10
