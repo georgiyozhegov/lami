@@ -1,1 +1,1 @@
-let main = plus 666 333
+let main = :+ 666 333

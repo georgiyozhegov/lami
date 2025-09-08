@@ -28,18 +28,18 @@ impl Interpreter {
 
     fn insert_sl(&mut self) {
         self.global.insert(
-            "plus".into(),
+            ":+".into(),
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
                     Value::Number(right) => Value::Number(left + right),
-                    _ => panic!("Cannot apply \"plus\" to a non-number argument"),
+                    _ => panic!("Cannot apply \":+\" to a non-number argument"),
                 })),
-                _ => panic!("Cannot apply \"plus\" to a non-number argument"),
+                _ => panic!("Cannot apply \":+\" to a non-number argument"),
             })),
         );
 
         self.global.insert(
-            "minus".into(),
+            ":-".into(),
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
                     Value::Number(right) => Value::Number(left - right),
@@ -50,7 +50,7 @@ impl Interpreter {
         );
 
         self.global.insert(
-            "lessThan".into(),
+            ":<".into(),
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
                     Value::Number(right) => Value::Number((left < right) as i128),
@@ -359,7 +359,12 @@ impl<'s> Lexer<'s> {
                     _ => Token::Word(lexeme.to_owned(), WordType::Identifier),
                 }
             }
-            '-' | '0'..='9' => {
+            ':' => {
+                self.eat(); // ':'
+                let lexeme = self.lexeme(|ch| !matches!(ch, ':' | ' ' | '\t' | '\n'));
+                Token::Word(":".to_owned() + lexeme, WordType::Identifier)
+            }
+            '0'..='9' => {
                 let lexeme = self.lexeme(|ch| matches!(ch, '0'..='9'));
                 Token::Word(lexeme.to_owned(), WordType::Number)
             }
