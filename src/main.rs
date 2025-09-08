@@ -43,9 +43,9 @@ impl Interpreter {
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
                     Value::Number(right) => Value::Number(left - right),
-                    _ => panic!("Cannot apply \"minus\" to a non-number argument"),
+                    _ => panic!("Cannot apply \":-\" to a non-number argument"),
                 })),
-                _ => panic!("Cannot apply \"minus\" to a non-number argument"),
+                _ => panic!("Cannot apply \":-\" to a non-number argument"),
             })),
         );
 
@@ -54,9 +54,9 @@ impl Interpreter {
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
                     Value::Number(right) => Value::Number((left < right) as i128),
-                    _ => panic!("Cannot apply \"lessThan\" to a non-number argument"),
+                    _ => panic!("Cannot apply \":<\" to a non-number argument"),
                 })),
-                _ => panic!("Cannot apply \"lessThan\" to a non-number argument"),
+                _ => panic!("Cannot apply \":<\" to a non-number argument"),
             })),
         );
 
