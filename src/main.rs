@@ -118,6 +118,21 @@ impl Interpreter {
             })),
         );
 
+        self.global.insert(
+            "and".into(),
+            Value::Intrinsic(Rc::new(|left| match left {
+                Value::Number(left @ (0 | 1)) => {
+                    Value::Intrinsic(Rc::new(move |right| match right {
+                        Value::Number(right @ (0 | 1)) => {
+                            Value::Number((left == 1 && right == 1) as i128)
+                        }
+                        _ => panic!("Cannot apply \"and\" to a non-boolean argument"),
+                    }))
+                }
+                _ => panic!("Cannot apply \"and\" to a non-boolean argument"),
+            })),
+        );
+
         self.global.insert("_".into(), Value::Number(0));
     }
 
