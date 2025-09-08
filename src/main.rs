@@ -89,9 +89,15 @@ impl Interpreter {
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
                     Value::Number(right) => Value::Number((left == right) as i128),
-                    _ => panic!("Cannot apply \":=\" to a non-number argument"),
+                    Value::Nil => Value::Number(0), // number != nil
+                    _ => panic!("Cannot apply \":=\" to a non-number or non-nil argument"),
                 })),
-                _ => panic!("Cannot apply \":=\" to a non-number argument"),
+                Value::Nil => Value::Intrinsic(Rc::new(move |right| {
+                    Value::Number(matches!(right, Value::Nil) as i128)
+                })),
+                // closure != nil
+                Value::Closure { .. } => Value::Intrinsic(Rc::new(move |_| Value::Number(0))),
+                _ => panic!("Cannot apply \":=\" to a non-number or non-nil argument"),
             })),
         );
 
@@ -133,7 +139,12 @@ impl Interpreter {
             })),
         );
 
-        self.global.insert("_".into(), Value::Number(0));
+        self.global.insert(
+            "debug".into(),
+            Value::Intrinsic(Rc::new(|value| dbg!(value))),
+        );
+
+        self.global.insert("nil".into(), Value::Nil);
     }
 
     fn run(mut self) -> Value {
@@ -217,6 +228,7 @@ pub enum Value {
         context: Context,
     },
     Intrinsic(Rc<dyn Fn(Value) -> Value>),
+    Nil,
 }
 
 impl std::fmt::Debug for Value {
@@ -224,16 +236,14 @@ impl std::fmt::Debug for Value {
         match self {
             Self::Number(value) => write!(f, "Number({value})"),
             Self::Closure {
-                parameter,
-                body,
-                context,
+                parameter, body, ..
             } => f
                 .debug_struct("Closure")
                 .field("parameter", parameter)
                 .field("body", body)
-                .field("context", context)
                 .finish(),
             Self::Intrinsic(_) => write!(f, "Intrinsic"),
+            Self::Nil => write!(f, "Nil"),
         }
     }
 }
@@ -437,8 +447,8 @@ impl<'s> Lexer<'s> {
                 let lexeme = self.lexeme(|ch| !matches!(ch, ':' | ' ' | '\t' | '\n'));
                 Token::Word(":".to_owned() + lexeme, WordType::Identifier)
             }
-            '0'..='9' => {
-                let lexeme = self.lexeme(|ch| matches!(ch, '0'..='9'));
+            '-' | '0'..='9' => {
+                let lexeme = self.lexeme(|ch| matches!(ch, '-' | '0'..='9'));
                 Token::Word(lexeme.to_owned(), WordType::Number)
             }
             ch => panic!("Unknown character: {ch:?}"),

@@ -8,9 +8,18 @@ let :>= = \a -> \b -> or (:> a b) (:= a b)
 
 let true = 1
 let false = 0
+let _ = nil
 
-let pair = \first -> \second -> \consumer ->
-    consumer first second
+let pair = \first -> \second -> \consumer -> consumer first second
 
-let first = \pair -> pair (\first -> \second -> first)
-let second = \pair -> pair (\first -> \second -> second)
+let head = \pair -> pair (\head -> \tail -> head)
+let tail = \pair -> pair (\head -> \tail -> tail)
+
+let map = recursive (\self ->
+    \sequence -> \transform ->
+        if := (tail sequence) nil
+        then head sequence
+        else pair
+            (transform (head sequence))
+            (self (tail sequence) transform)
+)
