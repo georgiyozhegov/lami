@@ -12,7 +12,7 @@ let factorial = recursive (
         else :* n (self (:- n 1))
 )
 
-let xs = (pair 2 (pair 3 nil))
-let ys = map xs (\x -> :* x x)
-
-let main = head ys
+let xs = (pair 1 (pair 2 (pair 3 nil)))
+let xs = map xs (\x -> :* x x)
+let sum = fold xs (\x -> \value -> :+ value x) 0
+let main = sum

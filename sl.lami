@@ -18,8 +18,15 @@ let tail = \pair -> pair (\head -> \tail -> tail)
 let map = recursive (\self ->
     \sequence -> \transform ->
         if := (tail sequence) nil
-        then head sequence
+        then pair (transform (head sequence)) nil
         else pair
             (transform (head sequence))
             (self (tail sequence) transform)
+)
+
+let fold = recursive (\self ->
+    \sequence -> \accumulate -> \value ->
+        if := (tail sequence) nil
+        then accumulate value (head sequence)
+        else self (tail sequence) (accumulate) (accumulate value (head sequence))
 )
