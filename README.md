@@ -1,7 +1,3 @@
-<div style="width: 300px">
-  <img src="media/logo.png">
-</div>
+<img width="120px" align="left" src="media/logo.png">
 
 *Lami* is a functional programming language based on lambda-calculus.
-
-I don't know why, but right now it's slow as fuck.
