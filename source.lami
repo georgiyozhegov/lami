@@ -12,4 +12,6 @@ let factorial = recursive (
         else :* n (self (:- n 1))
 )
 
-let main = and true true
+let xs = (pair 1 (pair 2 (pair 3 _)))
+
+let main = first (second (second xs))

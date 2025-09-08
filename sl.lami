@@ -8,3 +8,9 @@ let :>= = \a -> \b -> or (:> a b) (:= a b)
 
 let true = 1
 let false = 0
+
+let pair = \first -> \second -> \consumer ->
+    consumer first second
+
+let first = \pair -> pair (\first -> \second -> first)
+let second = \pair -> pair (\first -> \second -> second)
