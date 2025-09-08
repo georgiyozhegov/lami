@@ -6,7 +6,7 @@ use std::vec;
 fn main() {
     let source = std::fs::read_to_string("source.lami").unwrap();
     // include standard library
-    let source = std::fs::read_to_string("sl.lami").unwrap() + &source;
+    let source = std::fs::read_to_string("sl.lami").unwrap() + "\n" + &source;
     let tokenized = Lexer::new(&source).lex();
     let program = Parser::new(tokenized.into_iter()).parse();
     let interpreter = Interpreter::new(program.into_iter());
