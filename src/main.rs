@@ -55,10 +55,21 @@ impl Interpreter {
             ":*".into(),
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
-                    Value::Number(right) => Value::Number((left * right) as i128),
+                    Value::Number(right) => Value::Number(left * right),
                     _ => panic!("Cannot apply \":*\" to a non-number argument"),
                 })),
                 _ => panic!("Cannot apply \":*\" to a non-number argument"),
+            })),
+        );
+
+        self.global.insert(
+            ":/".into(),
+            Value::Intrinsic(Rc::new(|left| match left {
+                Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
+                    Value::Number(right) => Value::Number(left / right),
+                    _ => panic!("Cannot apply \":/\" to a non-number argument"),
+                })),
+                _ => panic!("Cannot apply \":/\" to a non-number argument"),
             })),
         );
 
@@ -81,6 +92,29 @@ impl Interpreter {
                     _ => panic!("Cannot apply \":=\" to a non-number argument"),
                 })),
                 _ => panic!("Cannot apply \":=\" to a non-number argument"),
+            })),
+        );
+
+        self.global.insert(
+            ":!".into(),
+            Value::Intrinsic(Rc::new(|value| match value {
+                Value::Number(value @ (0 | 1)) => Value::Number((value == 0) as i128),
+                _ => panic!("Cannot apply \":!\" to a non-boolean argument"),
+            })),
+        );
+
+        self.global.insert(
+            "or".into(),
+            Value::Intrinsic(Rc::new(|left| match left {
+                Value::Number(left @ (0 | 1)) => {
+                    Value::Intrinsic(Rc::new(move |right| match right {
+                        Value::Number(right @ (0 | 1)) => {
+                            Value::Number((left == 1 || right == 1) as i128)
+                        }
+                        _ => panic!("Cannot apply \"or\" to a non-boolean argument"),
+                    }))
+                }
+                _ => panic!("Cannot apply \"or\" to a non-boolean argument"),
             })),
         );
 

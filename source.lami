@@ -12,4 +12,4 @@ let factorial = recursive (
         else :* n (self (:- n 1))
 )
 
-let main = factorial 7
+let main = :<= 2 2
