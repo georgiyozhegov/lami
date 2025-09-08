@@ -427,6 +427,11 @@ impl<'s> Lexer<'s> {
                 self.eat();
                 Token::Lambda
             }
+            '#' => {
+                self.eat(); // '#'
+                self.lexeme(|ch| ch != '\n');
+                self.token()?
+            }
             ch if ch == '-' && self.ahead(1) == Some('>') => {
                 self.eat(); // '-'
                 self.eat(); // '>'
