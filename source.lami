@@ -1,1 +1,12 @@
-let main = :+ 666 333
+let recursive = \f ->
+    (\a -> f (\b -> (a a) b))
+    (\a -> f (\b -> (a a) b))
+
+let fibonacci = recursive (
+    \self -> \n ->
+        if :< n 2
+        then n
+        else :+ (self (:- n 2)) (self (:- n 1))
+)
+
+let main = fibonacci 22
