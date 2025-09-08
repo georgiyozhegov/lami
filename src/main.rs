@@ -5,6 +5,8 @@ use std::vec;
 
 fn main() {
     let source = std::fs::read_to_string("source.lami").unwrap();
+    // include standard library
+    let source = std::fs::read_to_string("sl.lami").unwrap() + &source;
     let tokenized = Lexer::new(&source).lex();
     let program = Parser::new(tokenized.into_iter()).parse();
     let interpreter = Interpreter::new(program.into_iter());
@@ -50,6 +52,17 @@ impl Interpreter {
         );
 
         self.global.insert(
+            ":*".into(),
+            Value::Intrinsic(Rc::new(|left| match left {
+                Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
+                    Value::Number(right) => Value::Number((left * right) as i128),
+                    _ => panic!("Cannot apply \":*\" to a non-number argument"),
+                })),
+                _ => panic!("Cannot apply \":*\" to a non-number argument"),
+            })),
+        );
+
+        self.global.insert(
             ":<".into(),
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
@@ -57,6 +70,17 @@ impl Interpreter {
                     _ => panic!("Cannot apply \":<\" to a non-number argument"),
                 })),
                 _ => panic!("Cannot apply \":<\" to a non-number argument"),
+            })),
+        );
+
+        self.global.insert(
+            ":=".into(),
+            Value::Intrinsic(Rc::new(|left| match left {
+                Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
+                    Value::Number(right) => Value::Number((left == right) as i128),
+                    _ => panic!("Cannot apply \":=\" to a non-number argument"),
+                })),
+                _ => panic!("Cannot apply \":=\" to a non-number argument"),
             })),
         );
 
