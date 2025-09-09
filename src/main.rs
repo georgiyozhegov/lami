@@ -181,10 +181,7 @@ impl Interpreter {
                 Some(value) => value.clone(),
                 _ => panic!("Name {name:?} is not found"),
             },
-            Expression::Number(raw_value) => match raw_value.parse::<i128>() {
-                Ok(value) => Value::Number(value),
-                _ => panic!("Failed to parse a number literal: {raw_value:?}"),
-            },
+            Expression::Number(value) => Value::Number(value),
         }
     }
 
@@ -352,9 +349,11 @@ impl Parser {
         }
     }
 
-    fn parse_number(&mut self) -> String {
+    fn parse_number(&mut self) -> i128 {
         match self.tokenized.next() {
-            Some(Token::Word(value, WordType::Number)) => value,
+            Some(Token::Word(value, WordType::Number)) => value
+                .parse()
+                .unwrap_or_else(|_| panic!("Failed to parse an integer: {value:?}")),
             got => panic!("Expected number literal, got {got:?}"),
         }
     }
@@ -390,7 +389,7 @@ pub enum Expression {
     },
     Parenthesized(Box<Expression>),
     Identifier(String),
-    Number(String),
+    Number(i128),
 }
 struct Lexer<'s> {
     source: &'s str,
