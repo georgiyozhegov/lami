@@ -1,22 +1,28 @@
 use std::iter::Peekable;
 use std::vec;
 
-use crate::lexer::{Token, WordType};
+use crate::lexer::{Interner, Symbol, Token, WordType};
 
-pub struct Parser {
+pub struct Parser<'s> {
     tokenized: Peekable<vec::IntoIter<Token>>,
+    interner: Interner<'s>,
 }
 
-impl Parser {
-    pub fn new(tokenized: impl Iterator<Item = Token>) -> Self {
+impl<'s> Parser<'s> {
+    pub fn new(tokenized: impl Iterator<Item = Token>, interner: Interner<'s>) -> Self {
         let tokenized: Vec<_> = tokenized.collect();
         Self {
             tokenized: tokenized.into_iter().peekable(),
+            interner,
         }
     }
 
-    pub fn parse(&mut self) -> Vec<Let> {
-        std::iter::from_fn(|| self.tokenized.peek().is_some().then(|| self.parse_let())).collect()
+    pub fn parse(mut self) -> (Vec<Let>, Interner<'s>) {
+        (
+            std::iter::from_fn(|| self.tokenized.peek().is_some().then(|| self.parse_let()))
+                .collect(),
+            self.interner,
+        )
     }
 
     fn parse_let(&mut self) -> Let {
@@ -98,7 +104,7 @@ impl Parser {
         Expression::Parenthesized(Box::new(inner))
     }
 
-    fn parse_identifier(&mut self) -> String {
+    fn parse_identifier(&mut self) -> Symbol {
         match self.tokenized.next() {
             Some(Token::Word(name, WordType::Identifier)) => name,
             got => panic!("Expected identifier, got {got:?}"),
@@ -107,9 +113,12 @@ impl Parser {
 
     fn parse_number(&mut self) -> i128 {
         match self.tokenized.next() {
-            Some(Token::Word(value, WordType::Number)) => value
-                .parse()
-                .unwrap_or_else(|_| panic!("Failed to parse an integer: {value:?}")),
+            Some(Token::Word(value, WordType::Number)) => {
+                let value = self.interner.resolve(value);
+                value
+                    .parse()
+                    .unwrap_or_else(|_| panic!("Failed to parse an integer: {value:?}"))
+            }
             got => panic!("Expected number literal, got {got:?}"),
         }
     }
@@ -124,14 +133,14 @@ impl Parser {
 
 #[derive(Debug)]
 pub struct Let {
-    pub identifier: String,
+    pub identifier: Symbol,
     pub value: Expression,
 }
 
 #[derive(Debug, Clone)]
 pub enum Expression {
     Lambda {
-        parameter: String,
+        parameter: Symbol,
         body: Box<Expression>,
     },
     Application {
@@ -144,6 +153,6 @@ pub enum Expression {
         otherwise: Box<Expression>,
     },
     Parenthesized(Box<Expression>),
-    Identifier(String),
+    Identifier(Symbol),
     Number(i128),
 }

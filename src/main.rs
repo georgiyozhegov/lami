@@ -1,7 +1,7 @@
 mod lexer;
 mod parser;
 
-use lexer::Lexer;
+use lexer::{Interner, Lexer, Symbol};
 use parser::{Expression, Let, Parser};
 
 use std::collections::HashMap;
@@ -12,30 +12,32 @@ fn main() {
     let source = std::fs::read_to_string("source.lami").unwrap();
     // include standard library
     let source = std::fs::read_to_string("sl.lami").unwrap() + "\n" + &source;
-    let tokenized = Lexer::new(&source).lex();
-    let program = Parser::new(tokenized.into_iter()).parse();
-    let interpreter = Interpreter::new(program.into_iter());
+    let (tokenized, interner) = Lexer::new(&source).lex();
+    let (program, interner) = Parser::new(tokenized.into_iter(), interner).parse();
+    let interpreter = Interpreter::new(program.into_iter(), interner);
     let main = interpreter.run();
     println!("{main:#?}");
 }
 
-struct Interpreter {
+struct Interpreter<'s> {
     program: vec::IntoIter<Let>,
     global: Context,
+    interner: Interner<'s>,
 }
 
-impl Interpreter {
-    pub fn new(program: impl Iterator<Item = Let>) -> Self {
+impl<'s> Interpreter<'s> {
+    pub fn new(program: impl Iterator<Item = Let>, interner: Interner<'s>) -> Self {
         let program: Vec<_> = program.collect();
         Self {
             program: program.into_iter(),
             global: Context::new(),
+            interner,
         }
     }
 
     fn insert_sl(&mut self) {
         self.global.insert(
-            ":+".into(),
+            self.interner.intern(":+"),
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
                     Value::Number(right) => Value::Number(left + right),
@@ -46,7 +48,7 @@ impl Interpreter {
         );
 
         self.global.insert(
-            ":-".into(),
+            self.interner.intern(":-"),
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
                     Value::Number(right) => Value::Number(left - right),
@@ -57,7 +59,7 @@ impl Interpreter {
         );
 
         self.global.insert(
-            ":*".into(),
+            self.interner.intern(":*"),
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
                     Value::Number(right) => Value::Number(left * right),
@@ -68,7 +70,7 @@ impl Interpreter {
         );
 
         self.global.insert(
-            ":/".into(),
+            self.interner.intern(":/"),
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
                     Value::Number(right) => Value::Number(left / right),
@@ -79,7 +81,7 @@ impl Interpreter {
         );
 
         self.global.insert(
-            ":<".into(),
+            self.interner.intern(":<"),
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
                     Value::Number(right) => Value::Number((left < right) as i128),
@@ -90,7 +92,7 @@ impl Interpreter {
         );
 
         self.global.insert(
-            ":=".into(),
+            self.interner.intern(":="),
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left) => Value::Intrinsic(Rc::new(move |right| match right {
                     Value::Number(right) => Value::Number((left == right) as i128),
@@ -107,7 +109,7 @@ impl Interpreter {
         );
 
         self.global.insert(
-            ":!".into(),
+            self.interner.intern(":!"),
             Value::Intrinsic(Rc::new(|value| match value {
                 Value::Number(value @ (0 | 1)) => Value::Number((value == 0) as i128),
                 _ => panic!("Cannot apply \":!\" to a non-boolean argument"),
@@ -115,7 +117,7 @@ impl Interpreter {
         );
 
         self.global.insert(
-            "or".into(),
+            self.interner.intern("or"),
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left @ (0 | 1)) => {
                     Value::Intrinsic(Rc::new(move |right| match right {
@@ -130,7 +132,7 @@ impl Interpreter {
         );
 
         self.global.insert(
-            "and".into(),
+            self.interner.intern("and"),
             Value::Intrinsic(Rc::new(|left| match left {
                 Value::Number(left @ (0 | 1)) => {
                     Value::Intrinsic(Rc::new(move |right| match right {
@@ -145,28 +147,28 @@ impl Interpreter {
         );
 
         self.global.insert(
-            "debug".into(),
+            self.interner.intern("debug"),
             Value::Intrinsic(Rc::new(|value| dbg!(value))),
         );
 
-        self.global.insert("nil".into(), Value::Nil);
+        self.global.insert(self.interner.intern("nil"), Value::Nil);
     }
 
     fn run(mut self) -> Value {
         self.insert_sl();
         for let_ in self.program {
-            let value = Self::evaluate(let_.value, &mut self.global);
+            let value = Self::evaluate(let_.value, &mut self.global, &self.interner);
             self.global.insert(let_.identifier, value);
         }
         let main = self
             .global
-            .get("main")
+            .get(&self.interner.intern("main"))
             .expect("Missing the \"main\" function")
             .clone();
         main
     }
 
-    fn evaluate(value: Expression, context: &mut Context) -> Value {
+    fn evaluate(value: Expression, context: &mut Context, interner: &Interner<'s>) -> Value {
         match value {
             Expression::Lambda { parameter, body } => Value::Closure {
                 parameter,
@@ -174,25 +176,25 @@ impl Interpreter {
                 context: context.clone(),
             },
             Expression::Application { left, right } => {
-                Self::evaluate_application(*left, *right, context)
+                Self::evaluate_application(*left, *right, context, interner)
             }
             Expression::If {
                 condition,
                 then,
                 otherwise,
-            } => Self::evaluate_if(*condition, *then, *otherwise, context),
-            Expression::Parenthesized(inner) => Self::evaluate(*inner, context),
+            } => Self::evaluate_if(*condition, *then, *otherwise, context, interner),
+            Expression::Parenthesized(inner) => Self::evaluate(*inner, context, interner),
             Expression::Identifier(name) => match context.get(&name) {
                 Some(value) => value.clone(),
-                _ => panic!("Name {name:?} is not found"),
+                _ => panic!("Name {:?} is not found", interner.resolve(name)),
             },
             Expression::Number(value) => Value::Number(value),
         }
     }
 
-    fn evaluate_application(left: Expression, right: Expression, context: &mut Context) -> Value {
-        let left = Self::evaluate(left, context);
-        let argument = Self::evaluate(right, context);
+    fn evaluate_application(left: Expression, right: Expression, context: &mut Context, interner: &Interner<'s>) -> Value {
+        let left = Self::evaluate(left, context, interner);
+        let argument = Self::evaluate(right, context, interner);
         match left {
             Value::Closure {
                 parameter,
@@ -200,7 +202,7 @@ impl Interpreter {
                 context: mut local,
             } => {
                 local.insert(parameter, argument);
-                Self::evaluate(body, &mut local)
+                Self::evaluate(body, &mut local, interner)
             }
             Value::Intrinsic(function) => function(argument),
             _ => panic!("Cannot apply a non-function: {left:?}"),
@@ -212,10 +214,11 @@ impl Interpreter {
         then: Expression,
         otherwise: Expression,
         context: &mut Context,
+        interner: &Interner<'s>,
     ) -> Value {
-        match Self::evaluate(condition, context) {
-            Value::Number(1) => Self::evaluate(then, context),
-            Value::Number(0) => Self::evaluate(otherwise, context),
+        match Self::evaluate(condition, context, interner) {
+            Value::Number(1) => Self::evaluate(then, context, interner),
+            Value::Number(0) => Self::evaluate(otherwise, context, interner),
             value => panic!("Invalid boolean value: {value:?}"),
         }
     }
@@ -225,7 +228,7 @@ impl Interpreter {
 pub enum Value {
     Number(i128),
     Closure {
-        parameter: String,
+        parameter: Symbol,
         body: Expression,
         context: Context,
     },
@@ -250,4 +253,4 @@ impl std::fmt::Debug for Value {
     }
 }
 
-pub type Context = HashMap<String, Value>;
+pub type Context = HashMap<Symbol, Value>;

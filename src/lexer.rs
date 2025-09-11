@@ -1,15 +1,22 @@
+use std::collections::HashMap;
+
 pub struct Lexer<'s> {
     source: &'s str,
     cursor: usize,
+    interner: Interner<'s>,
 }
 
 impl<'s> Lexer<'s> {
     pub fn new(source: &'s str) -> Self {
-        Self { source, cursor: 0 }
+        Self {
+            source,
+            cursor: 0,
+            interner: Interner::new(),
+        }
     }
 
-    pub fn lex(mut self) -> Vec<Token> {
-        std::iter::from_fn(|| self.token()).collect()
+    pub fn lex(mut self) -> (Vec<Token>, Interner<'s>) {
+        (std::iter::from_fn(|| self.token()).collect(), self.interner)
     }
 
     fn token(&mut self) -> Option<Token> {
@@ -50,17 +57,16 @@ impl<'s> Lexer<'s> {
                     "if" => Token::If,
                     "then" => Token::Then,
                     "else" => Token::Else,
-                    _ => Token::Word(lexeme.to_owned(), WordType::Identifier),
+                    _ => Token::Word(self.interner.intern(lexeme), WordType::Identifier),
                 }
             }
             ':' => {
-                self.eat(); // ':'
-                let lexeme = self.lexeme(|ch| !matches!(ch, ':' | ' ' | '\t' | '\n'));
-                Token::Word(":".to_owned() + lexeme, WordType::Identifier)
+                let lexeme = self.lexeme(|ch| !matches!(ch, ' ' | '\t' | '\n'));
+                Token::Word(self.interner.intern(lexeme), WordType::Identifier)
             }
             '-' | '0'..='9' => {
                 let lexeme = self.lexeme(|ch| matches!(ch, '-' | '0'..='9'));
-                Token::Word(lexeme.to_owned(), WordType::Number)
+                Token::Word(self.interner.intern(lexeme), WordType::Number)
             }
             ch => panic!("Unknown character: {ch:?}"),
         };
@@ -92,7 +98,7 @@ impl<'s> Lexer<'s> {
 
 #[derive(Debug, PartialEq)]
 pub enum Token {
-    Word(String, WordType),
+    Word(Symbol, WordType),
     Let,
     If,
     Then,
@@ -109,3 +115,34 @@ pub enum WordType {
     Identifier,
     Number,
 }
+
+pub struct Interner<'s> {
+    map: HashMap<&'s str, Symbol>,
+    vec: Vec<&'s str>,
+}
+
+impl<'s> Interner<'s> {
+    pub fn new() -> Self {
+        Self {
+            map: HashMap::new(),
+            vec: Vec::new(),
+        }
+    }
+
+    pub fn intern(&mut self, string: &'s str) -> Symbol {
+        if let Some(symbol) = self.map.get(string) {
+            return *symbol;
+        }
+        let symbol = Symbol(self.vec.len());
+        self.map.insert(string, symbol);
+        self.vec.push(string);
+        symbol
+    }
+
+    pub fn resolve(&self, symbol: Symbol) -> &'s str {
+        self.vec[symbol.0]
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Symbol(usize);
