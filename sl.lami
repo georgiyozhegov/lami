@@ -36,3 +36,13 @@ let sum = \sequence ->
 
 let length = \sequence ->
     fold (\output -> \x -> :+ output 1) 0 sequence
+
+let filter = recursive (\self ->
+    \predicate -> \sequence ->
+        if := (tail sequence) nil
+        then pair (head sequence) nil
+        else
+            if predicate (head sequence)
+            then pair (head sequence) (self predicate (tail sequence))
+            else self predicate (tail sequence)
+)
