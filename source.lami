@@ -12,8 +12,5 @@ let factorial = recursive (
         else :* n (self (:- n 1))
 )
 
-let isSuitable = \x -> :>= x 4
-let xs = (pair 1 (pair 4 (pair 3 (pair 6 nil))))
-let xs = filter isSuitable xs
-let xs = map debug xs
+let xs = map debug (rangeInclusive 1 10)
 let main = _

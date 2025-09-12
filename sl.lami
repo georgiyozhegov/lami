@@ -46,3 +46,13 @@ let filter = recursive (\self ->
             then pair (head sequence) (self predicate (tail sequence))
             else self predicate (tail sequence)
 )
+
+let range = recursive (\self ->
+    \start -> \end ->
+        if :> start end
+        then nil
+        else pair start (self (:+ start 1) end)
+)
+
+let rangeInclusive = \start -> \end ->
+    range start (:+ end 1)
