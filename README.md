@@ -2,6 +2,8 @@
 
 **_Lami_** is a functional programming language based on lambda-calculus.
 
+It aims to be as simple as lambda-calculus itself: the whole interpreter is ~500 lines of code.
+
 # How to run?
 
 Clone the repo, and then run
