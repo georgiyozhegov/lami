@@ -12,5 +12,7 @@ let factorial = recursive (
         else :* n (self (:- n 1))
 )
 
-let xs = map debug (rangeInclusive 1 10)
-let main = _
+let main = head (reverse (filter
+    (\x -> :> x 5)
+    (rangeInclusive 1 10)
+))

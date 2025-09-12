@@ -258,14 +258,11 @@ impl std::fmt::Debug for Value {
         match self {
             Self::Number(value) => write!(f, "Number({value})"),
             Self::Closure {
-                parameter,
-                body,
-                context,
+                parameter, body, ..
             } => f
                 .debug_struct("Closure")
                 .field("parameter", parameter)
                 .field("body", body)
-                .field("context", context)
                 .finish(),
             Self::Intrinsic(_) => write!(f, "Intrinsic"),
             Self::Nil => write!(f, "Nil"),

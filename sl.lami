@@ -31,11 +31,9 @@ let fold = recursive (\self ->
         else self (accumulate) (accumulate output (head sequence)) (tail sequence)
 )
 
-let sum = \sequence ->
-    fold (\output -> \x -> :+ output x) 0 sequence
+let sum = fold (\output -> \x -> :+ output x) 0
 
-let length = \sequence ->
-    fold (\output -> \x -> :+ output 1) 0 sequence
+let length = fold (\output -> \x -> :+ output 1) 0
 
 let filter = recursive (\self ->
     \predicate -> \sequence ->
@@ -56,3 +54,7 @@ let range = recursive (\self ->
 
 let rangeInclusive = \start -> \end ->
     range start (:+ end 1)
+
+let reverse = fold
+    (\reversed -> \x -> pair x reversed)
+    nil
