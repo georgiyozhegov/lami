@@ -157,7 +157,12 @@ impl<'s> Interpreter<'s> {
     fn run(mut self) -> Value {
         self.insert_sl();
         for let_ in self.program {
-            let value = Self::evaluate(let_.value, &mut self.global, &self.interner);
+            let value = Self::evaluate(
+                let_.value,
+                &mut HashMap::new(),
+                &self.global,
+                &self.interner,
+            );
             self.global.insert(let_.identifier, value);
         }
         let main = self
@@ -168,7 +173,12 @@ impl<'s> Interpreter<'s> {
         main
     }
 
-    fn evaluate(value: Expression, context: &mut Context, interner: &Interner<'s>) -> Value {
+    fn evaluate(
+        value: Expression,
+        context: &mut Context,
+        global: &Context,
+        interner: &Interner<'s>,
+    ) -> Value {
         match value {
             Expression::Lambda { parameter, body } => Value::Closure {
                 parameter,
@@ -176,15 +186,15 @@ impl<'s> Interpreter<'s> {
                 context: context.clone(),
             },
             Expression::Application { left, right } => {
-                Self::evaluate_application(*left, *right, context, interner)
+                Self::evaluate_application(*left, *right, context, global, interner)
             }
             Expression::If {
                 condition,
                 then,
                 otherwise,
-            } => Self::evaluate_if(*condition, *then, *otherwise, context, interner),
-            Expression::Parenthesized(inner) => Self::evaluate(*inner, context, interner),
-            Expression::Identifier(name) => match context.get(&name) {
+            } => Self::evaluate_if(*condition, *then, *otherwise, context, global, interner),
+            Expression::Parenthesized(inner) => Self::evaluate(*inner, context, global, interner),
+            Expression::Identifier(name) => match context.get(&name).or(global.get(&name)) {
                 Some(value) => value.clone(),
                 _ => panic!("Name {:?} is not found", interner.resolve(name)),
             },
@@ -192,9 +202,15 @@ impl<'s> Interpreter<'s> {
         }
     }
 
-    fn evaluate_application(left: Expression, right: Expression, context: &mut Context, interner: &Interner<'s>) -> Value {
-        let left = Self::evaluate(left, context, interner);
-        let argument = Self::evaluate(right, context, interner);
+    fn evaluate_application(
+        left: Expression,
+        right: Expression,
+        context: &mut Context,
+        global: &Context,
+        interner: &Interner<'s>,
+    ) -> Value {
+        let left = Self::evaluate(left, context, global, interner);
+        let argument = Self::evaluate(right, context, global, interner);
         match left {
             Value::Closure {
                 parameter,
@@ -202,7 +218,7 @@ impl<'s> Interpreter<'s> {
                 context: mut local,
             } => {
                 local.insert(parameter, argument);
-                Self::evaluate(body, &mut local, interner)
+                Self::evaluate(body, &mut local, global, interner)
             }
             Value::Intrinsic(function) => function(argument),
             _ => panic!("Cannot apply a non-function: {left:?}"),
@@ -214,11 +230,12 @@ impl<'s> Interpreter<'s> {
         then: Expression,
         otherwise: Expression,
         context: &mut Context,
+        global: &Context,
         interner: &Interner<'s>,
     ) -> Value {
-        match Self::evaluate(condition, context, interner) {
-            Value::Number(1) => Self::evaluate(then, context, interner),
-            Value::Number(0) => Self::evaluate(otherwise, context, interner),
+        match Self::evaluate(condition, context, global, interner) {
+            Value::Number(1) => Self::evaluate(then, context, global, interner),
+            Value::Number(0) => Self::evaluate(otherwise, context, global, interner),
             value => panic!("Invalid boolean value: {value:?}"),
         }
     }
@@ -241,11 +258,14 @@ impl std::fmt::Debug for Value {
         match self {
             Self::Number(value) => write!(f, "Number({value})"),
             Self::Closure {
-                parameter, body, ..
+                parameter,
+                body,
+                context,
             } => f
                 .debug_struct("Closure")
                 .field("parameter", parameter)
                 .field("body", body)
+                .field("context", context)
                 .finish(),
             Self::Intrinsic(_) => write!(f, "Intrinsic"),
             Self::Nil => write!(f, "Nil"),
