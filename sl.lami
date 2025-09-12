@@ -16,17 +16,17 @@ let head = \pair -> pair (\head -> \tail -> head)
 let tail = \pair -> pair (\head -> \tail -> tail)
 
 let map = recursive (\self ->
-    \sequence -> \transform ->
+    \transform -> \sequence ->
         if := (tail sequence) nil
         then pair (transform (head sequence)) nil
         else pair
             (transform (head sequence))
-            (self (tail sequence) transform)
+            (self transform (tail sequence))
 )
 
 let fold = recursive (\self ->
-    \sequence -> \accumulate -> \value ->
+    \accumulate -> \value -> \sequence ->
         if := (tail sequence) nil
         then accumulate value (head sequence)
-        else self (tail sequence) (accumulate) (accumulate value (head sequence))
+        else self (accumulate) (accumulate value (head sequence)) (tail sequence) 
 )
