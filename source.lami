@@ -15,9 +15,6 @@ let factorial = recursive (
 let squared = \sequence ->
     map (\x -> :* x x) sequence
 
-let sum = \sequence ->
-    fold (\x -> \total -> :+ total x) 0 sequence
-
 # i don't know why but it's slow as fuck
 let xs = (pair 1 (pair 2 (pair 3 nil)))
 let main = sum (squared xs)

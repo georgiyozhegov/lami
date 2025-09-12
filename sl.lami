@@ -25,8 +25,11 @@ let map = recursive (\self ->
 )
 
 let fold = recursive (\self ->
-    \accumulate -> \value -> \sequence ->
+    \accumulate -> \output -> \sequence ->
         if := (tail sequence) nil
-        then accumulate value (head sequence)
-        else self (accumulate) (accumulate value (head sequence)) (tail sequence) 
+        then accumulate output (head sequence)
+        else self (accumulate) (accumulate output (head sequence)) (tail sequence)
 )
+
+let sum = \sequence ->
+    fold (\output -> \x -> :+ output x) 0 sequence
