@@ -1,4 +1,4 @@
-Program = { Let };
+Program = Let, { Let };
 
 Let = "let", Identifier, "=", Expression;
 
@@ -14,17 +14,20 @@ Application = Atom, { Atom };
 Atom =
     "(", Expression, ")" |
     Identifier |
-    Number;
+    Number |
+    "nil";
 
 If =
     "if", Expression,
     "then", Expression,
     "else", Expression;
 
-Identifier = "_" | Letter, { Letter | Digit };
+Identifier =
+    ("_" | Letter, { Letter | Digit }) |
+    (":", { AnyCharExceptInvisible });
 
 Letter = "a" .. "z" | "A" .. "Z";
 
-Number = Digit, { Digit };
+Number = [ "-" ], Digit, { Digit };
 
 Digit = "0" .. "9";

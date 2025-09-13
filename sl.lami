@@ -17,8 +17,8 @@ let tail = \pair -> pair (\head -> \tail -> tail)
 
 let map = recursive (\self ->
     \transform -> \sequence ->
-        if := (tail sequence) nil
-        then pair (transform (head sequence)) nil
+        if := sequence nil
+        then nil
         else pair
             (transform (head sequence))
             (self transform (tail sequence))
@@ -26,9 +26,12 @@ let map = recursive (\self ->
 
 let fold = recursive (\self ->
     \accumulate -> \output -> \sequence ->
-        if := (tail sequence) nil
-        then accumulate output (head sequence)
-        else self (accumulate) (accumulate output (head sequence)) (tail sequence)
+        if := sequence nil
+        then nil
+        else self
+            (accumulate)
+            (accumulate output (head sequence))
+            (tail sequence)
 )
 
 let sum = fold (\output -> \x -> :+ output x) 0
@@ -37,8 +40,8 @@ let length = fold (\output -> \x -> :+ output 1) 0
 
 let filter = recursive (\self ->
     \predicate -> \sequence ->
-        if := (tail sequence) nil
-        then pair (head sequence) nil
+        if := sequence nil
+        then nil
         else
             if predicate (head sequence)
             then pair (head sequence) (self predicate (tail sequence))
