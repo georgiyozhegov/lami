@@ -18,6 +18,12 @@ cargo run
 - `source.lami`: Source file that gets interpreted
 - `src/`: Source code of the interpreter
 
+# Syntax highlighting
+
+This is only for (Neo)Vim now.
+
+Copy `lami.vim` into the `~/.config/nvim/syntax/` directory.
+
 # Contributing
 
 If you want to be a contributor, just create a pull request. Maybe I'll accept it :}
